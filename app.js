@@ -3,6 +3,8 @@ const express = require('express');
 const path = require('path');
 const hbs = require('hbs');
 const bcrypt = require('bcryptjs');
+const cookieParser = require('cookie-parser');
+const auth = require('./middleware/auth');
 
 const app = express();
 
@@ -16,7 +18,12 @@ const partial_path = path.join(__dirname, "./templates/partials");
 // ('/JS', express.static(__dirname + '../../public/JS'))
 
 // console.log(path.join(__dirname, "./public"));
+
+
+
+//Using as Middleware
 app.use(express.json());
+app.use(cookieParser());
 app.use(express.urlencoded({ extended: false }));
 
 
@@ -33,6 +40,22 @@ console.log(process.env.SECRET_KEY);
 app.get('/', function(req, res) {
     res.render("login");
 });
+app.get('/secret', function(req, res) {
+    res.render("secret");
+});
+
+app.get('/logout', function(req, res) {
+    try {
+
+        res.clearCookie('jwt');
+        console.log('logout Successfully');
+        // req.user.save();
+        res.render('login');
+    } catch (error) {
+        res.status(500).send(error);
+
+    }
+})
 
 
 app.get('/register', function(req, res) {
@@ -58,6 +81,16 @@ app.post('/register', async(req, res) => {
             console.log('The success part' + steamregister);
             const token = await steamregister.generateAuthToken();
             console.log('The token part' + token);
+            // const cookie = await usermail.generateAuthToken();
+
+
+
+            // Cookies
+            // res.cookie('jwt', cookie, {
+            //     expires: new Date(Date.now() + 30000),
+            //     httpOnly: true
+            // });
+            // console.log(cookie);
 
 
 
@@ -90,6 +123,15 @@ app.post('/login', async(req, res) => {
         const matching = await bcrypt.compare(password, usermail.password);
         const token = await usermail.generateAuthToken();
         console.log('The token part' + token);
+        const cookie = await usermail.generateAuthToken();
+
+        res.cookie('jwt', cookie, {
+            expires: new Date(Date.now + 600000),
+            httpOnly: true
+        });
+        console.log(cookie);
+
+
         if (matching) {
             res.status(201).render('index');
         } else {
